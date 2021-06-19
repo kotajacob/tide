@@ -7,68 +7,77 @@ import (
 	"encoding/csv"
 	"fmt"
 	"io"
-	"io/ioutil"
-	"log"
 	"os"
 	"strings"
 	"time"
+	"unicode"
 )
 
-// read csv file and return map of string arrays
-// skips the first 3 lines as they are comments in the LINZ csv files
-func parseCSV(f *os.File) map[int][]string {
-	entries := make(map[int][]string)
-	data, err := ioutil.ReadAll(f)
-	if err != nil {
-		log.Printf("Failed reading file: %v", err)
-	}
-	r := csv.NewReader(strings.NewReader(string(data)))
+// getTides reads csv file from LINZ with tidal data and returns a map of times
+// with tide heights. The first 3 lines are metadata and are thus skipped.
+func getTides(f *os.File, tides *map[time.Time]float32) error {
+	r := csv.NewReader(f)
 	r.FieldsPerRecord = -1 // allows for variable number of fields
-	// Skip the first 3 lines
+	// skip the first 3 lines
 	for i := 0; i < 3; i++ {
 		r.Read()
 	}
-	i := 0
 	for {
-		entry, err := r.Read()
+		record, err := r.Read()
 		if err == io.EOF {
 			break
 		}
 		if err != nil {
-			log.Fatal(err)
+			return err
 		}
-		entries[i] = entry
-		i++
+		addTide(tides, record)
 	}
-	return entries
+	return nil
 }
 
-func entryTime(year, month, day string) time.Time {
+// addTide takes a csv record and appends tide entries to a map.
+func addTide(tides *map[time.Time]float32, records []string) error {
+	// each record represents a single date, but contains multiple tides
+	date, err := getDate(records[3], records[2], records[0])
+	if err != nil {
+		return err
+	}
+	for r := 4; r < len(records); r += 2 {
+		// some days have less tides
+		if records[r] == "" {
+			break
+		}
+		// reformat time into time.Duration
+		f := func(c rune) bool {
+			return !unicode.IsLetter(c) && !unicode.IsNumber(c)
+		}
+		h := strings.FieldsFunc(records[r], f)
+		duration, err := time.ParseDuration(fmt.Sprintf("%vh%vm", h[0], h[1]))
+		time := date.Add(duration)
+		if err != nil {
+			fmt.Printf("error: %v\n", err)
+			return err
+		}
+		fmt.Println(time, records[r+1])
+	}
+	return nil
+}
+
+// getDate takes the year, month, day strings from the CSV file and returns a
+// time.Time value with the correct timezone.
+func getDate(year, month, day string) (time.Time, error) {
 	loc, _ := time.LoadLocation("NZ") // Timezone isn't included in the CSV
 	month = fmt.Sprintf("%02s", month)
 	day = fmt.Sprintf("%02s", day)
 	t, err := time.ParseInLocation("20060102", year+month+day, loc)
-	if err != nil {
-		fmt.Printf("failed parse date: %v\n", err)
-		os.Exit(1)
-	}
-	return t
-}
-
-// print out tidal data
-func display(entries map[int][]string) {
-	nowTime := time.Now()
-	fmt.Println(nowTime.Local())
-	fmt.Println("---")
-	for e := 0; e < len(entries); e++ {
-		// fmt.Printf("%v ", e)
-		// fmt.Println(entries[e])
-		eTime := entryTime(entries[e][3], entries[e][2], entries[e][0])
-		fmt.Println(eTime, entries[e][4], entries[e][5], entries[e][6], entries[e][7], entries[e][8], entries[e][9], entries[e][10], entries[e][11])
-	}
+	return t, err
 }
 
 func main() {
-	entries := parseCSV(os.Stdin)
-	display(entries)
+	tides := make(map[time.Time]float32)
+	err := getTides(os.Stdin, &tides)
+	if err != nil {
+		fmt.Printf("%v\n", err)
+		os.Exit(1)
+	}
 }

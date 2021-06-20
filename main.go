@@ -34,7 +34,7 @@ func getRecords(f *os.File) ([][]string, error) {
 }
 
 // parseRecord reads a []string representing a line in the csv file
-func parseRecord(tides *Tides, record []string) error {
+func parseRecord(tides *Tides, times *[]time.Time, record []string) error {
 	// Each record represents a single date, but contains multiple tides at
 	// different times.
 	date, err := getDate(record[3], record[2], record[0])
@@ -56,6 +56,7 @@ func parseRecord(tides *Tides, record []string) error {
 			return err
 		}
 		tides.Set(t, height)
+		*times = append(*times, t)
 	}
 	return nil
 }
@@ -82,19 +83,22 @@ func getDuration(s string) (time.Duration, error) {
 
 func main() {
 	tides := &Tides{}
+	var times []time.Time
 	records, err := getRecords(os.Stdin)
 	if err != nil {
 		fmt.Printf("%v\n", err)
 		os.Exit(1)
 	}
+
 	for _, record := range records {
-		err := parseRecord(tides, record)
+		err := parseRecord(tides, &times, record)
 		if err != nil {
 			fmt.Printf("%v\n", err)
 			os.Exit(1)
 		}
 	}
-	for k, v := range *tides {
-		fmt.Printf("%v - %v\n", k, v)
+
+	for _, t := range times {
+		fmt.Printf("%v - %v\n", t, (*tides)[t])
 	}
 }

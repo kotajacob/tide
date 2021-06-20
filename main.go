@@ -11,6 +11,8 @@ import (
 	"strings"
 	"time"
 	"unicode"
+
+	"github.com/guptarohit/asciigraph"
 )
 
 type Tides map[time.Time]float64
@@ -81,7 +83,29 @@ func getDuration(s string) (time.Duration, error) {
 	return duration, err
 }
 
+func display(index int, tides *Tides, times *[]time.Time) {
+	var heights []float64
+	heights = append(heights, (*tides)[(*times)[index-1]])
+	heights = append(heights, (*tides)[(*times)[index]])
+	heights = append(heights, (*tides)[(*times)[index+1]])
+	heights = append(heights, (*tides)[(*times)[index+2]])
+	heights = append(heights, (*tides)[(*times)[index+3]])
+	heights = append(heights, (*tides)[(*times)[index+4]])
+	heights = append(heights, (*tides)[(*times)[index+5]])
+	graph := asciigraph.Plot(heights, asciigraph.Height(8))
+	fmt.Println(graph)
+	fmt.Println(heights)
+	fmt.Printf("%v - %v\n", (*times)[index-1], (*tides)[(*times)[index-1]])
+	fmt.Printf("%v - %v\n", (*times)[index], (*tides)[(*times)[index]])
+	fmt.Printf("%v - %v\n", (*times)[index+1], (*tides)[(*times)[index+1]])
+	fmt.Printf("%v - %v\n", (*times)[index+2], (*tides)[(*times)[index+2]])
+	fmt.Printf("%v - %v\n", (*times)[index+3], (*tides)[(*times)[index+3]])
+	fmt.Printf("%v - %v\n", (*times)[index+4], (*tides)[(*times)[index+4]])
+	fmt.Printf("%v - %v\n", (*times)[index+5], (*tides)[(*times)[index+5]])
+}
+
 func main() {
+	now := time.Now()
 	tides := &Tides{}
 	var times []time.Time
 	records, err := getRecords(os.Stdin)
@@ -98,7 +122,10 @@ func main() {
 		}
 	}
 
-	for _, t := range times {
-		fmt.Printf("%v - %v\n", t, (*tides)[t])
+	for k, v := range times {
+		if v.After(now) {
+			display(k, tides, &times)
+			break
+		}
 	}
 }

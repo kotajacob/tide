@@ -6,59 +6,56 @@ package main
 import (
 	"encoding/csv"
 	"fmt"
-	"io"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 	"unicode"
 )
 
-// getTides reads csv file from LINZ with tidal data and returns a map of times
-// with tide heights. The first 3 lines are metadata and are thus skipped.
-func getTides(f *os.File, tides *map[time.Time]float32) error {
-	r := csv.NewReader(f)
-	r.FieldsPerRecord = -1 // allows for variable number of fields
-	// skip the first 3 lines
-	for i := 0; i < 3; i++ {
-		r.Read()
-	}
-	for {
-		record, err := r.Read()
-		if err == io.EOF {
-			break
-		}
-		if err != nil {
-			return err
-		}
-		addTide(tides, record)
-	}
-	return nil
+type Tides map[time.Time]float64
+
+func (t *Tides) Set(time time.Time, height float64) *Tides {
+	(*t)[time] = height
+	return t
 }
 
-// addTide takes a csv record and appends tide entries to a map.
-func addTide(tides *map[time.Time]float32, records []string) error {
-	// each record represents a single date, but contains multiple tides
-	date, err := getDate(records[3], records[2], records[0])
+// getTides reads and parses a csv file from LINZ with tidal data into
+// [][]string and skips the first 3 metadata lines.
+func getRecords(f *os.File) ([][]string, error) {
+	reader := csv.NewReader(f)
+	reader.FieldsPerRecord = -1 // allows for variable number of fields
+	// skip the first 3 lines
+	for i := 0; i < 3; i++ {
+		reader.Read()
+	}
+	records, err := reader.ReadAll()
+	return records, err
+}
+
+// parseRecord reads a []string representing a line in the csv file
+func parseRecord(tides *Tides, record []string) error {
+	// Each record represents a single date, but contains multiple tides at
+	// different times.
+	date, err := getDate(record[3], record[2], record[0])
 	if err != nil {
 		return err
 	}
-	for r := 4; r < len(records); r += 2 {
+	for r := 4; r < len(record); r += 2 {
 		// some days have less tides
-		if records[r] == "" {
+		if record[r] == "" {
 			break
 		}
-		// reformat time into time.Duration
-		f := func(c rune) bool {
-			return !unicode.IsLetter(c) && !unicode.IsNumber(c)
-		}
-		h := strings.FieldsFunc(records[r], f)
-		duration, err := time.ParseDuration(fmt.Sprintf("%vh%vm", h[0], h[1]))
-		time := date.Add(duration)
+		duration, err := getDuration(record[r])
+		t := date.Add(duration)
 		if err != nil {
-			fmt.Printf("error: %v\n", err)
 			return err
 		}
-		fmt.Println(time, records[r+1])
+		height, err := strconv.ParseFloat(record[r+1], 64)
+		if err != nil {
+			return err
+		}
+		tides.Set(t, height)
 	}
 	return nil
 }
@@ -73,11 +70,31 @@ func getDate(year, month, day string) (time.Time, error) {
 	return t, err
 }
 
+// getDuration takes a string in the hh:mm format and returns a time.Duration
+func getDuration(s string) (time.Duration, error) {
+	f := func(c rune) bool {
+		return !unicode.IsLetter(c) && !unicode.IsNumber(c)
+	}
+	t := strings.FieldsFunc(s, f)
+	duration, err := time.ParseDuration(fmt.Sprintf("%vh%vm", t[0], t[1]))
+	return duration, err
+}
+
 func main() {
-	tides := make(map[time.Time]float32)
-	err := getTides(os.Stdin, &tides)
+	tides := &Tides{}
+	records, err := getRecords(os.Stdin)
 	if err != nil {
 		fmt.Printf("%v\n", err)
 		os.Exit(1)
+	}
+	for _, record := range records {
+		err := parseRecord(tides, record)
+		if err != nil {
+			fmt.Printf("%v\n", err)
+			os.Exit(1)
+		}
+	}
+	for k, v := range *tides {
+		fmt.Printf("%v - %v\n", k, v)
 	}
 }

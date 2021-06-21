@@ -19,7 +19,7 @@ type Tide struct {
 	Height float64
 }
 
-// getTides reads and parses a csv file from LINZ with tidal data into
+// getRecords reads and parses a csv file from LINZ with tidal data into
 // [][]string and skips the first 3 metadata lines.
 func getRecords(f *os.File) ([][]string, error) {
 	reader := csv.NewReader(f)
@@ -32,7 +32,8 @@ func getRecords(f *os.File) ([][]string, error) {
 	return records, err
 }
 
-// parseRecord reads a []string representing a line in the csv file
+// parseRecord reads a []string representing a line in the csv file and adds
+// them to a slice of Tides in order from oldest to newest.
 func parseRecord(tides *[]Tide, record []string) error {
 	// Each record represents a single date, but contains multiple tides at
 	// different times.

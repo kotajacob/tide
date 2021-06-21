@@ -11,15 +11,12 @@ import (
 	"strings"
 	"time"
 	"unicode"
-
-	"github.com/guptarohit/asciigraph"
+	// "github.com/guptarohit/asciigraph"
 )
 
-type Tides map[time.Time]float64
-
-func (t *Tides) Set(time time.Time, height float64) *Tides {
-	(*t)[time] = height
-	return t
+type Tide struct {
+	Time   time.Time
+	Height float64
 }
 
 // getTides reads and parses a csv file from LINZ with tidal data into
@@ -36,7 +33,7 @@ func getRecords(f *os.File) ([][]string, error) {
 }
 
 // parseRecord reads a []string representing a line in the csv file
-func parseRecord(tides *Tides, times *[]time.Time, record []string) error {
+func parseRecord(tides *[]Tide, record []string) error {
 	// Each record represents a single date, but contains multiple tides at
 	// different times.
 	date, err := getDate(record[3], record[2], record[0])
@@ -57,8 +54,8 @@ func parseRecord(tides *Tides, times *[]time.Time, record []string) error {
 		if err != nil {
 			return err
 		}
-		tides.Set(t, height)
-		*times = append(*times, t)
+		tide := Tide{t, height}
+		*tides = append(*tides, tide)
 	}
 	return nil
 }
@@ -83,31 +80,15 @@ func getDuration(s string) (time.Duration, error) {
 	return duration, err
 }
 
-func display(index int, tides *Tides, times *[]time.Time) {
-	var heights []float64
-	heights = append(heights, (*tides)[(*times)[index-1]])
-	heights = append(heights, (*tides)[(*times)[index]])
-	heights = append(heights, (*tides)[(*times)[index+1]])
-	heights = append(heights, (*tides)[(*times)[index+2]])
-	heights = append(heights, (*tides)[(*times)[index+3]])
-	heights = append(heights, (*tides)[(*times)[index+4]])
-	heights = append(heights, (*tides)[(*times)[index+5]])
-	graph := asciigraph.Plot(heights, asciigraph.Height(8))
-	fmt.Println(graph)
-	fmt.Println(heights)
-	fmt.Printf("%v - %v\n", (*times)[index-1], (*tides)[(*times)[index-1]])
-	fmt.Printf("%v - %v\n", (*times)[index], (*tides)[(*times)[index]])
-	fmt.Printf("%v - %v\n", (*times)[index+1], (*tides)[(*times)[index+1]])
-	fmt.Printf("%v - %v\n", (*times)[index+2], (*tides)[(*times)[index+2]])
-	fmt.Printf("%v - %v\n", (*times)[index+3], (*tides)[(*times)[index+3]])
-	fmt.Printf("%v - %v\n", (*times)[index+4], (*tides)[(*times)[index+4]])
-	fmt.Printf("%v - %v\n", (*times)[index+5], (*tides)[(*times)[index+5]])
+func display(index int, tides *[]Tide) {
+	fmt.Printf("%v - %v\n", (*tides)[index].Time, (*tides)[index].Height)
+	fmt.Printf("%v - %v\n", (*tides)[index+1].Time, (*tides)[index+1].Height)
+	fmt.Printf("%v - %v\n", (*tides)[index+2].Time, (*tides)[index+2].Height)
 }
 
 func main() {
 	now := time.Now()
-	tides := &Tides{}
-	var times []time.Time
+	var tides []Tide
 	records, err := getRecords(os.Stdin)
 	if err != nil {
 		fmt.Printf("%v\n", err)
@@ -115,16 +96,16 @@ func main() {
 	}
 
 	for _, record := range records {
-		err := parseRecord(tides, &times, record)
+		err := parseRecord(&tides, record)
 		if err != nil {
 			fmt.Printf("%v\n", err)
 			os.Exit(1)
 		}
 	}
 
-	for k, v := range times {
-		if v.After(now) {
-			display(k, tides, &times)
+	for i, v := range tides {
+		if v.Time.After(now) {
+			display(i, &tides)
 			break
 		}
 	}

@@ -108,14 +108,36 @@ func getCurrentHeight(prev, next Tide, now time.Time) float64 {
 	return h
 }
 
+func getNearestTide(prev, next Tide, now time.Time) Tide {
+	p := now.Sub(prev.Time)
+	n := next.Time.Sub(now)
+	if p < n {
+		return prev
+	} else {
+		return next
+	}
+}
+
 func getFloatTime(t time.Time) float64 {
 	h := float64(t.Hour())
 	m := float64(t.Minute()) / 60
 	return h + m
 }
 
-func display(index int, tides *[]Tide, now time.Time) {
-	fmt.Printf("%.2f meters\n", getCurrentHeight((*tides)[index-1], (*tides)[index], now))
+func displayFancy(index int, tides *[]Tide, now time.Time) {
+	prevTide := (*tides)[index-1]
+	nextTide := (*tides)[index]
+	height := getCurrentHeight(prevTide, nextTide, now)
+	nearest := getNearestTide(prevTide, nextTide, now)
+	fmt.Printf("%.2fm\n", height)
+	fmt.Printf("%.2fm\n", nearest.Height)
+}
+
+func displaySimple(index int, tides *[]Tide, now time.Time) {
+	prevTide := (*tides)[index-1]
+	nextTide := (*tides)[index]
+	height := getCurrentHeight(prevTide, nextTide, now)
+	fmt.Printf("%.2fm\n", height)
 }
 
 func main() {
@@ -141,15 +163,21 @@ func main() {
 		}
 	}
 
-	for i, v := range tides {
-		if v.Time.After(now) {
-			display(i, &tides, now)
-			break
-		}
-	}
-
-	// Print if FD is a terminal. Will determine if we display a graph later.
+	// Different output if printing to non-terminal
 	if isatty.IsTerminal(os.Stdout.Fd()) {
 		fmt.Println("Is Terminal")
+		for i, v := range tides {
+			if v.Time.After(now) {
+				displayFancy(i, &tides, now)
+				break
+			}
+		}
+	} else {
+		for i, v := range tides {
+			if v.Time.After(now) {
+				displaySimple(i, &tides, now)
+				break
+			}
+		}
 	}
 }

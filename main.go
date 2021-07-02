@@ -86,9 +86,9 @@ func getDuration(s string) (time.Duration, error) {
 // future tide heights. The forumla comes from
 // https://www.linz.govt.nz/sea/tides/tide-predictions/how-calculate-tide-times-heights
 func getCurrentHeight(prev, next Tide, now time.Time) float64 {
-	tf := float64(now.Hour()) // Time type not Tide
-	pf := float64(prev.Time.Hour())
-	nf := float64(next.Time.Hour())
+	tf := getFloatTime(now)
+	pf := getFloatTime(prev.Time)
+	nf := getFloatTime(next.Time)
 	ph := prev.Height
 	nh := next.Height
 	a := float64(math.Pi) * (((tf - pf) / (nf - pf)) + 1)
@@ -96,8 +96,14 @@ func getCurrentHeight(prev, next Tide, now time.Time) float64 {
 	return h
 }
 
+func getFloatTime(t time.Time) float64 {
+	h := float64(t.Hour())
+	m := float64(t.Minute()) / 60
+	return h + m
+}
+
 func display(index int, tides *[]Tide, now time.Time) {
-	fmt.Printf("height: %v\n", getCurrentHeight((*tides)[index-1], (*tides)[index+1], now))
+	fmt.Printf("height: %v\n", getCurrentHeight((*tides)[index-1], (*tides)[index], now))
 	fmt.Printf("%v - %v\n", (*tides)[index-1].Time, (*tides)[index-1].Height)
 	fmt.Printf("%v - %v\n", (*tides)[index].Time, (*tides)[index].Height)
 	fmt.Printf("%v - %v\n", (*tides)[index+1].Time, (*tides)[index+1].Height)

@@ -12,12 +12,24 @@ import (
 	"strings"
 	"time"
 	"unicode"
-	// "github.com/guptarohit/asciigraph"
+
+	"github.com/mattn/go-isatty"
 )
 
 type Tide struct {
 	Time   time.Time
 	Height float64
+}
+
+// getInput returns a File using either Stdin or the first passed argument
+func getInput() (*os.File, error) {
+	args := os.Args[1:]
+	if len(args) == 0 {
+		return os.Stdin, nil
+	} else {
+		f, err := os.Open(args[0])
+		return f, err
+	}
 }
 
 // getRecords reads and parses a csv file from LINZ with tidal data into
@@ -103,17 +115,19 @@ func getFloatTime(t time.Time) float64 {
 }
 
 func display(index int, tides *[]Tide, now time.Time) {
-	fmt.Printf("height: %v\n", getCurrentHeight((*tides)[index-1], (*tides)[index], now))
-	fmt.Printf("%v - %v\n", (*tides)[index-1].Time, (*tides)[index-1].Height)
-	fmt.Printf("%v - %v\n", (*tides)[index].Time, (*tides)[index].Height)
-	fmt.Printf("%v - %v\n", (*tides)[index+1].Time, (*tides)[index+1].Height)
-	fmt.Printf("%v - %v\n", (*tides)[index+2].Time, (*tides)[index+2].Height)
+	fmt.Printf("%.2f meters\n", getCurrentHeight((*tides)[index-1], (*tides)[index], now))
 }
 
 func main() {
 	now := time.Now()
 	var tides []Tide
-	records, err := getRecords(os.Stdin)
+	f, err := getInput()
+	if err != nil {
+		fmt.Printf("%v\n", err)
+		os.Exit(1)
+	}
+
+	records, err := getRecords(f)
 	if err != nil {
 		fmt.Printf("%v\n", err)
 		os.Exit(1)
@@ -132,5 +146,10 @@ func main() {
 			display(i, &tides, now)
 			break
 		}
+	}
+
+	// Print if FD is a terminal. Will determine if we display a graph later.
+	if isatty.IsTerminal(os.Stdout.Fd()) {
+		fmt.Println("Is Terminal")
 	}
 }

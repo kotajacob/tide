@@ -6,7 +6,6 @@ package main
 import (
 	"encoding/csv"
 	"fmt"
-	"math"
 	"os"
 	"strconv"
 	"strings"
@@ -19,6 +18,52 @@ import (
 type Tide struct {
 	Time   time.Time
 	Height float64
+}
+
+func main() {
+	// Get a File from Stdin or a passed argument
+	f, err := getInput()
+	if err != nil {
+		fmt.Printf("%v\n", err)
+		os.Exit(1)
+	}
+
+	// Read csv File and store [][]string records
+	records, err := getRecords(f)
+	if err != nil {
+		fmt.Printf("%v\n", err)
+		os.Exit(1)
+	}
+
+	// Convert [][]string records to []Tide
+	var tides []Tide
+	for _, record := range records {
+		err := parseRecord(&tides, record)
+		if err != nil {
+			fmt.Printf("%v\n", err)
+			os.Exit(1)
+		}
+	}
+
+	// Calculate and print out tide data. Different output if printing to
+	// non-terminal.
+	now := time.Now()
+	if isatty.IsTerminal(os.Stdout.Fd()) {
+		fmt.Println("Is Terminal")
+		for i, v := range tides {
+			if v.Time.After(now) {
+				displayTerm(i, &tides, now)
+				break
+			}
+		}
+	} else {
+		for i, v := range tides {
+			if v.Time.After(now) {
+				displaySimple(i, &tides, now)
+				break
+			}
+		}
+	}
 }
 
 // getInput returns a File using either Stdin or the first passed argument
@@ -92,92 +137,4 @@ func getDuration(s string) (time.Duration, error) {
 	t := strings.FieldsFunc(s, f)
 	duration, err := time.ParseDuration(fmt.Sprintf("%vh%vm", t[0], t[1]))
 	return duration, err
-}
-
-// getCurrentHeight calculates the current tide height using the previous and
-// future tide heights. The forumla comes from
-// https://www.linz.govt.nz/sea/tides/tide-predictions/how-calculate-tide-times-heights
-func getCurrentHeight(prev, next Tide, now time.Time) float64 {
-	tf := getFloatTime(now)
-	pf := getFloatTime(prev.Time)
-	nf := getFloatTime(next.Time)
-	ph := prev.Height
-	nh := next.Height
-	a := float64(math.Pi) * (((tf - pf) / (nf - pf)) + 1)
-	h := ph + (nh-ph)*((math.Cos(a)+1)/2)
-	return h
-}
-
-func getNearestTide(prev, next Tide, now time.Time) Tide {
-	p := now.Sub(prev.Time)
-	n := next.Time.Sub(now)
-	if p < n {
-		return prev
-	} else {
-		return next
-	}
-}
-
-func getFloatTime(t time.Time) float64 {
-	h := float64(t.Hour())
-	m := float64(t.Minute()) / 60
-	return h + m
-}
-
-func displayFancy(index int, tides *[]Tide, now time.Time) {
-	prevTide := (*tides)[index-1]
-	nextTide := (*tides)[index]
-	height := getCurrentHeight(prevTide, nextTide, now)
-	nearest := getNearestTide(prevTide, nextTide, now)
-	fmt.Printf("%.2fm\n", height)
-	fmt.Printf("%.2fm\n", nearest.Height)
-}
-
-func displaySimple(index int, tides *[]Tide, now time.Time) {
-	prevTide := (*tides)[index-1]
-	nextTide := (*tides)[index]
-	height := getCurrentHeight(prevTide, nextTide, now)
-	fmt.Printf("%.2fm\n", height)
-}
-
-func main() {
-	now := time.Now()
-	var tides []Tide
-	f, err := getInput()
-	if err != nil {
-		fmt.Printf("%v\n", err)
-		os.Exit(1)
-	}
-
-	records, err := getRecords(f)
-	if err != nil {
-		fmt.Printf("%v\n", err)
-		os.Exit(1)
-	}
-
-	for _, record := range records {
-		err := parseRecord(&tides, record)
-		if err != nil {
-			fmt.Printf("%v\n", err)
-			os.Exit(1)
-		}
-	}
-
-	// Different output if printing to non-terminal
-	if isatty.IsTerminal(os.Stdout.Fd()) {
-		fmt.Println("Is Terminal")
-		for i, v := range tides {
-			if v.Time.After(now) {
-				displayFancy(i, &tides, now)
-				break
-			}
-		}
-	} else {
-		for i, v := range tides {
-			if v.Time.After(now) {
-				displaySimple(i, &tides, now)
-				break
-			}
-		}
-	}
 }

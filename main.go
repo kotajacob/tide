@@ -20,6 +20,8 @@ type Tide struct {
 	Height float64
 }
 
+const tz = "NZ"
+
 func main() {
 	// Get a File from Stdin or a passed argument
 	f, err := getInput()
@@ -122,7 +124,7 @@ func parseRecord(tides *[]Tide, record []string) error {
 // getDate takes the year, month, day strings from the CSV file and returns a
 // time.Time value with the correct timezone.
 func getDate(year, month, day string) (time.Time, error) {
-	loc, _ := time.LoadLocation("NZ") // Timezone isn't included in the CSV
+	loc, _ := time.LoadLocation(tz) // Timezone isn't included in the CSV
 	month = fmt.Sprintf("%02s", month)
 	day = fmt.Sprintf("%02s", day)
 	t, err := time.ParseInLocation("20060102", year+month+day, loc)

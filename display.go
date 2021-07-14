@@ -13,8 +13,8 @@ func displayTerm(index int, tides *[]Tide, now time.Time) {
 	prevTide := (*tides)[index-1]
 	nextTide := (*tides)[index]
 	nextDuration := fmtDuration(nextTide.Time.Sub(now))
-	height := getCurrentHeight(prevTide, nextTide, now)
 	rising := getRising(prevTide, nextTide)
+	height := getHeight(prevTide, nextTide, now)
 	fmt.Printf("%.2fm", height)
 	if rising {
 		fmt.Printf("⬆ - high tide (%.2fm) in %v\n",
@@ -28,8 +28,8 @@ func displayTerm(index int, tides *[]Tide, now time.Time) {
 func displaySimple(index int, tides *[]Tide, now time.Time) {
 	prevTide := (*tides)[index-1]
 	nextTide := (*tides)[index]
-	height := getCurrentHeight(prevTide, nextTide, now)
 	rising := getRising(prevTide, nextTide)
+	height := getHeight(prevTide, nextTide, now)
 	fmt.Printf("%.2fm", height)
 	if rising {
 		fmt.Printf("⬆\n")
@@ -38,19 +38,11 @@ func displaySimple(index int, tides *[]Tide, now time.Time) {
 	}
 }
 
-func fmtDuration(d time.Duration) string {
-	d = d.Round(time.Minute)
-	h := d / time.Hour
-	d -= h * time.Hour
-	m := d / time.Minute
-	return fmt.Sprintf("%02dh%02dm", h, m)
-}
-
-// getCurrentHeight calculates the current tide height using the previous and
-// future tide heights. The forumla comes from
+// getHeight calculates the tide height using the previous and future
+// tide heights. The forumla comes from
 // https://www.linz.govt.nz/sea/tides/tide-predictions/how-calculate-tide-times-heights
-func getCurrentHeight(prev, next Tide, now time.Time) float64 {
-	tf := getFloatTime(now)
+func getHeight(prev, next Tide, t time.Time) float64 {
+	tf := getFloatTime(t)
 	pf := getFloatTime(prev.Time)
 	nf := getFloatTime(next.Time)
 	ph := prev.Height
@@ -76,4 +68,12 @@ func getFloatTime(t time.Time) float64 {
 	h := float64(t.Hour())
 	m := float64(t.Minute()) / 60
 	return h + m
+}
+
+func fmtDuration(d time.Duration) string {
+	d = d.Round(time.Minute)
+	h := d / time.Hour
+	d -= h * time.Hour
+	m := d / time.Minute
+	return fmt.Sprintf("%02dh%02dm", h, m)
 }

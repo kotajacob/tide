@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"math"
 	"time"
+
+	"github.com/wzshiming/ctc"
 )
 
 const graphWidth int = 36
@@ -64,7 +66,7 @@ func graph(prev, next Tide, now time.Time) string {
 		for y := range w {
 			if h >= rows[y] {
 				if now.After(t) {
-					waves[x][y] = "░"
+					waves[x][y] = fmt.Sprintf("%s%s%s", ctc.BackgroundBrightBlack, "░", ctc.Reset)
 				} else {
 					waves[x][y] = "█"
 				}

@@ -13,16 +13,27 @@ func displayTerm(index int, tides *[]Tide, now time.Time) {
 	prevTide := (*tides)[index-1]
 	nextTide := (*tides)[index]
 	height := getCurrentHeight(prevTide, nextTide, now)
-	nearest := getNearestTide(prevTide, nextTide, now)
-	fmt.Printf("%.2fm\n", height)
-	fmt.Printf("%.2fm\n", nearest.Height)
+	// nearest := getNearestTide(prevTide, nextTide, now)
+	rising := getRising(prevTide, nextTide)
+	fmt.Printf("%.2fm", height)
+	if rising {
+		fmt.Printf("⬆\n")
+	} else {
+		fmt.Printf("⬇\n")
+	}
 }
 
 func displaySimple(index int, tides *[]Tide, now time.Time) {
 	prevTide := (*tides)[index-1]
 	nextTide := (*tides)[index]
 	height := getCurrentHeight(prevTide, nextTide, now)
-	fmt.Printf("%.2fm\n", height)
+	rising := getRising(prevTide, nextTide)
+	fmt.Printf("%.2fm", height)
+	if rising {
+		fmt.Printf("⬆\n")
+	} else {
+		fmt.Printf("⬇\n")
+	}
 }
 
 // getCurrentHeight calculates the current tide height using the previous and
@@ -39,6 +50,8 @@ func getCurrentHeight(prev, next Tide, now time.Time) float64 {
 	return h
 }
 
+// getNearestTide returns either the previous or next tide for a given time
+// depending on which is closer in time.
 func getNearestTide(prev, next Tide, now time.Time) Tide {
 	p := now.Sub(prev.Time)
 	n := next.Time.Sub(now)
@@ -46,6 +59,16 @@ func getNearestTide(prev, next Tide, now time.Time) Tide {
 		return prev
 	} else {
 		return next
+	}
+}
+
+// getRising returns true if tide is rising based on the previous and next
+// tides.
+func getRising(prev, next Tide) bool {
+	if next.Height > prev.Height {
+		return true
+	} else {
+		return false
 	}
 }
 

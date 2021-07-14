@@ -51,7 +51,6 @@ func main() {
 	// non-terminal.
 	now := time.Now()
 	if isatty.IsTerminal(os.Stdout.Fd()) {
-		fmt.Println("Is Terminal")
 		for i, v := range tides {
 			if v.Time.After(now) {
 				displayTerm(i, &tides, now)

@@ -12,14 +12,16 @@ import (
 func displayTerm(index int, tides *[]Tide, now time.Time) {
 	prevTide := (*tides)[index-1]
 	nextTide := (*tides)[index]
+	nextDuration := fmtDuration(nextTide.Time.Sub(now))
 	height := getCurrentHeight(prevTide, nextTide, now)
-	// nearest := getNearestTide(prevTide, nextTide, now)
 	rising := getRising(prevTide, nextTide)
 	fmt.Printf("%.2fm", height)
 	if rising {
-		fmt.Printf("⬆\n")
+		fmt.Printf("⬆ - high tide (%.2fm) in %v\n",
+			nextTide.Height, nextDuration)
 	} else {
-		fmt.Printf("⬇\n")
+		fmt.Printf("⬇ - low tide (%.2fm) in %v\n",
+			nextTide.Height, nextDuration)
 	}
 }
 
@@ -36,6 +38,14 @@ func displaySimple(index int, tides *[]Tide, now time.Time) {
 	}
 }
 
+func fmtDuration(d time.Duration) string {
+	d = d.Round(time.Minute)
+	h := d / time.Hour
+	d -= h * time.Hour
+	m := d / time.Minute
+	return fmt.Sprintf("%02dh%02dm", h, m)
+}
+
 // getCurrentHeight calculates the current tide height using the previous and
 // future tide heights. The forumla comes from
 // https://www.linz.govt.nz/sea/tides/tide-predictions/how-calculate-tide-times-heights
@@ -48,18 +58,6 @@ func getCurrentHeight(prev, next Tide, now time.Time) float64 {
 	a := float64(math.Pi) * (((tf - pf) / (nf - pf)) + 1)
 	h := ph + (nh-ph)*((math.Cos(a)+1)/2)
 	return h
-}
-
-// getNearestTide returns either the previous or next tide for a given time
-// depending on which is closer in time.
-func getNearestTide(prev, next Tide, now time.Time) Tide {
-	p := now.Sub(prev.Time)
-	n := next.Time.Sub(now)
-	if p < n {
-		return prev
-	} else {
-		return next
-	}
 }
 
 // getRising returns true if tide is rising based on the previous and next

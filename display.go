@@ -28,7 +28,7 @@ func displayTerm(index int, tides *[]Tide, now time.Time) {
 		fmt.Printf("⬇ - low tide (%.2fm) in %v\n",
 			nextTide.Height, nextDuration)
 	}
-	fmt.Println(graph(prevTide, nextTide, now))
+	fmt.Printf("%s", graph(prevTide, nextTide, now))
 }
 
 func displaySimple(index int, tides *[]Tide, now time.Time) {
@@ -48,25 +48,25 @@ func displaySimple(index int, tides *[]Tide, now time.Time) {
 // the previous and next tides, and the current time. The last graph point will
 // be the next Tide, the first will be after the previous tide.
 func graph(prev, next Tide, now time.Time) string {
-	interval := next.Time.Sub(prev.Time) / time.Duration(graphWidth)
-	difference := (next.Height - prev.Height) / float64(graphHeight)
+	timeInterval := next.Time.Sub(prev.Time) / time.Duration(graphWidth)
+	heightInterval := (next.Height - prev.Height) / float64(graphHeight)
 	var waves [graphWidth][graphHeight]string
-	var rows [graphHeight]float64
-	for i := range rows {
-		rows[i] = (difference * float64(i+1)) + prev.Height
+	var rowHeights [graphHeight]float64
+	for i := range rowHeights {
+		rowHeights[i] = (heightInterval * float64(i+1)) + prev.Height
 	}
-	// build the wave variable
 	for x, w := range waves {
-		d := interval * time.Duration(x+1)
+		d := timeInterval * time.Duration(x+1)
 		t := prev.Time.Add(d)
 		h := getHeight(prev, next, t)
 		for y := range w {
 			waves[x][y] = " "
 		}
 		for y := range w {
-			if h >= rows[y] {
+			if h >= rowHeights[y] {
 				if now.After(t) {
-					waves[x][y] = fmt.Sprintf("%s%s%s", ctc.BackgroundBrightBlack, "░", ctc.Reset)
+					waves[x][y] = fmt.Sprintf("%s%s%s",
+						ctc.ForegroundBrightBlack, "█", ctc.Reset)
 				} else {
 					waves[x][y] = "█"
 				}

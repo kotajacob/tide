@@ -49,34 +49,27 @@ func displaySimple(index int, tides *[]Tide, now time.Time) {
 // be the next Tide, the first will be after the previous tide.
 func graph(prev, next Tide, now time.Time) string {
 	timeInterval := next.Time.Sub(prev.Time) / time.Duration(graphWidth)
-	heightInterval := (next.Height - prev.Height) / float64(graphHeight)
+	minHeight := math.Min(next.Height, prev.Height)
+	maxHeight := math.Max(next.Height, prev.Height)
 	var waves [graphWidth][graphHeight]string
-	var rowHeights [graphHeight]float64
-	for i := range rowHeights {
-		rowHeights[i] = (heightInterval * float64(i+1)) + prev.Height
-	}
 	for x, w := range waves {
 		d := timeInterval * time.Duration(x+1)
 		t := prev.Time.Add(d)
 		h := getHeight(prev, next, t)
+		scaledHeight := scaleDatum(h, minHeight, maxHeight, graphHeight)
 		for y := range w {
 			waves[x][y] = " "
 		}
-		for y := range w {
-			if h >= rowHeights[y] {
-				if now.After(t) {
-					waves[x][y] = fmt.Sprintf("%s%s%s",
-						ctc.ForegroundBrightBlack, "█", ctc.Reset)
-				} else {
-					waves[x][y] = "█"
-				}
-				break
-			}
+		if now.After(t) {
+			waves[x][scaledHeight] = fmt.Sprintf("%s%s%s",
+				ctc.ForegroundBrightBlack, "█", ctc.Reset)
+		} else {
+			waves[x][scaledHeight] = "█"
 		}
 	}
 	// build the print string
 	var s string
-	for y := 0; y < graphHeight; y++ {
+	for y := graphHeight - 1; y >= 0; y-- {
 		for x := 0; x < graphWidth; x++ {
 			s += waves[x][y]
 		}
@@ -85,13 +78,27 @@ func graph(prev, next Tide, now time.Time) string {
 	return s
 }
 
+// scaleDatum scales a point of data to the closest 'degrees' space between min
+// and max. e.g. if datum = 14, min = 10, and max = 20, and degrees = 5, then
+// this function would output '2', meaning 14 is 2/5 of the way between 10 and
+// 20.  The actual output is floored and 0 indexed, so it will be a number from
+// 0-4. A special case is needed in the datum can equal the max.
+func scaleDatum(datum float64, min float64, max float64, degrees int) int {
+	if datum == max {
+		return degrees - 1
+	}
+	proportion := (datum - min) / (max - min)
+	scaled := proportion * float64(degrees)
+	return int(scaled)
+}
+
 // getHeight calculates the tide height using the previous and future
 // tide heights. The forumla comes from
 // https://www.linz.govt.nz/sea/tides/tide-predictions/how-calculate-tide-times-heights
 func getHeight(prev, next Tide, t time.Time) float64 {
-	tf := getFloatTime(t)
-	pf := getFloatTime(prev.Time)
-	nf := getFloatTime(next.Time)
+	tf := float64(t.Unix())
+	pf := float64(prev.Time.Unix())
+	nf := float64(next.Time.Unix())
 	ph := prev.Height
 	nh := next.Height
 	a := float64(math.Pi) * (((tf - pf) / (nf - pf)) + 1)
@@ -109,14 +116,7 @@ func getRising(prev, next Tide) bool {
 	}
 }
 
-// getFloatTime takes a time variable and returns a "decimal hour" format which
-// is hour.minutes_as_percentage
-func getFloatTime(t time.Time) float64 {
-	h := float64(t.Hour())
-	m := float64(t.Minute()) / 60
-	return h + m
-}
-
+// fmtDuration returns a formatted string with hours and minutes.
 func fmtDuration(d time.Duration) string {
 	d = d.Round(time.Minute)
 	h := d / time.Hour

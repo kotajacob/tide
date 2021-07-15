@@ -3,6 +3,14 @@ Tide
 
 Print Aotearoa's tidal data. Reads csv files from [the official LINZ tide predictions](https://www.linz.govt.nz/sea/tides/tide-predictions).
 
+![1](img.webp)
+
+Tide will print a simpler message without the graph if not running in an
+interactive terminal (for example if run as a notification or part of a
+pipeline). You can change this easily by editing display.go, hell you could
+probably even add a flag or something. Maybe send a patch if you bother doing
+that.
+
 Build
 ------
 

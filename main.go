@@ -130,7 +130,9 @@ func getDate(year, month, day string) (time.Time, error) {
 	return t, err
 }
 
-// getDuration takes a string in the hh:mm format and returns a time.Duration
+// getDuration takes a string in the hh:mm format and returns a time.Duration.
+// The string is split into slice t and then formatted into the
+// time.ParseDuration format.
 func getDuration(s string) (time.Duration, error) {
 	f := func(c rune) bool {
 		return !unicode.IsLetter(c) && !unicode.IsNumber(c)

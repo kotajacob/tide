@@ -1,5 +1,4 @@
-Tide
-===========
+# Tide [![builds.sr.ht status](https://builds.sr.ht/~kota/tide.svg)](https://builds.sr.ht/~kota/tide)
 
 Print Aotearoa's tidal data. Reads csv files from [the official LINZ tide predictions](https://www.linz.govt.nz/sea/tides/tide-predictions).
 

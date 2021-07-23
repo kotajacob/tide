@@ -15,58 +15,13 @@ import (
 	"github.com/mattn/go-isatty"
 )
 
+// TZ is the timezone for the imported times.
+const TZ = "NZ"
+
 // Tide represents a LINZ tidal height at a specific time.
 type Tide struct {
 	Time   time.Time
 	Height float64
-}
-
-// TZ is the timezone for the imported times.
-const TZ = "NZ"
-
-func main() {
-	// Get a File from Stdin or a passed argument
-	f, err := getInput()
-	if err != nil {
-		fmt.Printf("%v\n", err)
-		os.Exit(1)
-	}
-
-	// Read csv File and store [][]string records
-	records, err := getRecords(f)
-	if err != nil {
-		fmt.Printf("%v\n", err)
-		os.Exit(1)
-	}
-
-	// Convert [][]string records to []Tide
-	var tides []Tide
-	for _, record := range records {
-		err := parseRecord(&tides, record)
-		if err != nil {
-			fmt.Printf("%v\n", err)
-			os.Exit(1)
-		}
-	}
-
-	// Calculate and print out tide data. Different output if printing to
-	// non-terminal.
-	now := time.Now()
-	if isatty.IsTerminal(os.Stdout.Fd()) {
-		for i, v := range tides {
-			if v.Time.After(now) {
-				displayTerm(i, &tides, now)
-				break
-			}
-		}
-	} else {
-		for i, v := range tides {
-			if v.Time.After(now) {
-				displaySimple(i, &tides, now)
-				break
-			}
-		}
-	}
 }
 
 // getInput returns a File using either Stdin or the first passed argument
@@ -142,4 +97,49 @@ func getDuration(s string) (time.Duration, error) {
 	t := strings.FieldsFunc(s, f)
 	duration, err := time.ParseDuration(fmt.Sprintf("%vh%vm", t[0], t[1]))
 	return duration, err
+}
+
+func main() {
+	// Get a File from Stdin or a passed argument
+	f, err := getInput()
+	if err != nil {
+		fmt.Printf("%v\n", err)
+		os.Exit(1)
+	}
+
+	// Read csv File and store [][]string records
+	records, err := getRecords(f)
+	if err != nil {
+		fmt.Printf("%v\n", err)
+		os.Exit(1)
+	}
+
+	// Convert [][]string records to []Tide
+	var tides []Tide
+	for _, record := range records {
+		err := parseRecord(&tides, record)
+		if err != nil {
+			fmt.Printf("%v\n", err)
+			os.Exit(1)
+		}
+	}
+
+	// Calculate and print out tide data. Different output if printing to
+	// non-terminal.
+	now := time.Now()
+	if isatty.IsTerminal(os.Stdout.Fd()) {
+		for i, v := range tides {
+			if v.Time.After(now) {
+				displayTerm(i, &tides, now)
+				break
+			}
+		}
+	} else {
+		for i, v := range tides {
+			if v.Time.After(now) {
+				displaySimple(i, &tides, now)
+				break
+			}
+		}
+	}
 }

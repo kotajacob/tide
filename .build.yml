@@ -1,0 +1,9 @@
+image: ubuntu/lts
+packages:
+  - golang
+sources:
+  - https://git.sr.ht/~kota/tide
+tasks:
+  - test: |
+      cd tide
+      go test

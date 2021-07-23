@@ -15,12 +15,14 @@ import (
 	"github.com/mattn/go-isatty"
 )
 
+// Tide represents a LINZ tidal height at a specific time.
 type Tide struct {
 	Time   time.Time
 	Height float64
 }
 
-const tz = "NZ"
+// TZ is the timezone for the imported times.
+const TZ = "NZ"
 
 func main() {
 	// Get a File from Stdin or a passed argument
@@ -123,7 +125,7 @@ func parseRecord(tides *[]Tide, record []string) error {
 // getDate takes the year, month, day strings from the CSV file and returns a
 // time.Time value with the correct timezone.
 func getDate(year, month, day string) (time.Time, error) {
-	loc, _ := time.LoadLocation(tz) // Timezone isn't included in the CSV
+	loc, _ := time.LoadLocation(TZ) // Timezone isn't included in the CSV
 	month = fmt.Sprintf("%02s", month)
 	day = fmt.Sprintf("%02s", day)
 	t, err := time.ParseInLocation("20060102", year+month+day, loc)

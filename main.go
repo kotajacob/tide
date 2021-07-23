@@ -6,6 +6,7 @@ package main
 import (
 	"encoding/csv"
 	"fmt"
+	"io"
 	"os"
 	"strconv"
 	"strings"
@@ -14,6 +15,8 @@ import (
 
 	"github.com/mattn/go-isatty"
 )
+
+var out io.Writer = os.Stdout // modified during testing
 
 // TZ is the timezone for the imported times.
 const TZ = "NZ"

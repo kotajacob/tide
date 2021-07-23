@@ -20,15 +20,15 @@ func displayTerm(index int, tides *[]Tide, now time.Time) {
 	nextDuration := fmtDuration(nextTide.Time.Sub(now))
 	rising := getRising(prevTide, nextTide)
 	height := getHeight(prevTide, nextTide, now)
-	fmt.Printf("%.2fm", height)
+	fmt.Fprintf(out, "%.2fm", height)
 	if rising {
-		fmt.Printf("⬆ - high tide (%.2fm) in %v\n",
+		fmt.Fprintf(out, "⬆ - high tide (%.2fm) in %v\n",
 			nextTide.Height, nextDuration)
 	} else {
-		fmt.Printf("⬇ - low tide (%.2fm) in %v\n",
+		fmt.Fprintf(out, "⬇ - low tide (%.2fm) in %v\n",
 			nextTide.Height, nextDuration)
 	}
-	fmt.Printf("%s", graph(prevTide, nextTide, now))
+	fmt.Fprintf(out, "%s", graph(prevTide, nextTide, now))
 }
 
 func displaySimple(index int, tides *[]Tide, now time.Time) {
@@ -36,11 +36,11 @@ func displaySimple(index int, tides *[]Tide, now time.Time) {
 	nextTide := (*tides)[index]
 	rising := getRising(prevTide, nextTide)
 	height := getHeight(prevTide, nextTide, now)
-	fmt.Printf("%.2fm", height)
+	fmt.Fprintf(out, "%.2fm", height)
 	if rising {
-		fmt.Printf("⬆\n")
+		fmt.Fprintf(out, "⬆\n")
 	} else {
-		fmt.Printf("⬇\n")
+		fmt.Fprintf(out, "⬇\n")
 	}
 }
 

@@ -1,6 +1,6 @@
 module git.sr.ht/~kota/tide
 
-go 1.12
+go 1.13
 
 require (
 	github.com/mattn/go-isatty v0.0.13
